@@ -131,14 +131,15 @@ class ChatBot:
 
                 # group_info = GroupInfo(group_id=0, group_name="私聊", platform="qq")
                 group_info = None
+                group_willing = 1
 
         # 处理群聊消息
         else:
             # 白名单设定由nontbot侧完成
             if event.group_id:
-                if event.group_id not in global_config.talk_allowed_groups:
+                if str(event.group_id) not in global_config.talk_allowed_groups:
                     return
-
+            group_willing=global_config.talk_allowed_groups[str(event.group_id)]
             user_info = UserInfo(
                 user_id=event.user_id,
                 user_nickname=event.sender.nickname,
@@ -210,6 +211,8 @@ class ChatBot:
         await self.storage.store_message(message, chat, topic[0] if topic else None)
 
         is_mentioned = is_mentioned_bot_in_message(message)
+
+            
         reply_probability = await willing_manager.change_reply_willing_received(
             chat_stream=chat,
             topic=topic[0] if topic else None,
@@ -218,6 +221,7 @@ class ChatBot:
             is_emoji=message.is_emoji,
             interested_rate=interested_rate,
             sender_id=str(message.message_info.user_info.user_id),
+            group_willing=group_willing
         )
         current_willing = willing_manager.get_willing(chat_stream=chat)
 

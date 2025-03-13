@@ -205,3 +205,4 @@ jieba.cache
 .idea
 *.iml
 *.ipr
+nohup.out

@@ -8,6 +8,8 @@ from loguru import logger
 from .config import global_config
 from .chat_stream import ChatStream
 
+from loguru import logger
+
 
 class WillingManager:
     def __init__(self):
@@ -23,7 +25,6 @@ class WillingManager:
         self._decay_task = None
         self._mode_switch_task = None
         self._started = False
-        
     async def _decay_reply_willing(self):
         """定期衰减回复意愿"""
         while True:
@@ -73,7 +74,7 @@ class WillingManager:
         if is_high_mode:
             # 从高回复期切换到低回复期
             self.chat_high_willing_mode[chat_id] = False
-            self.chat_reply_willing[chat_id] = 0.1  # 设置为最低回复意愿
+            self.chat_reply_willing[chat_id] = 0  # 设置为最低回复意愿
             self.chat_low_willing_duration[chat_id] = random.randint(600, 1200)  # 10-20分钟
             logger.debug(f"聊天流 {chat_id} 切换到低回复意愿期，持续 {self.chat_low_willing_duration[chat_id]} 秒")
         else:
@@ -92,7 +93,6 @@ class WillingManager:
         if stream:
             return self.chat_reply_willing.get(stream.stream_id, 0)
         return 0
-    
     def set_willing(self, chat_id: str, willing: float):
         """设置指定聊天流的回复意愿"""
         self.chat_reply_willing[chat_id] = willing
@@ -100,7 +100,7 @@ class WillingManager:
     def _ensure_chat_initialized(self, chat_id: str):
         """确保聊天流的所有数据已初始化"""
         if chat_id not in self.chat_reply_willing:
-            self.chat_reply_willing[chat_id] = 0.1
+            self.chat_reply_willing[chat_id] = 0.5
         
         if chat_id not in self.chat_high_willing_mode:
             self.chat_high_willing_mode[chat_id] = False
@@ -120,7 +120,8 @@ class WillingManager:
                                           config = None,
                                           is_emoji: bool = False,
                                           interested_rate: float = 0,
-                                          sender_id: str = None) -> float:
+                                          sender_id: str = None,
+                                          group_willing: float =1) -> float:
         """改变指定聊天流的回复意愿并返回回复概率"""
         # 获取或创建聊天流
         stream = chat_stream
@@ -132,7 +133,7 @@ class WillingManager:
         # 增加消息计数
         self.chat_msg_count[chat_id] = self.chat_msg_count.get(chat_id, 0) + 1
         
-        current_willing = self.chat_reply_willing.get(chat_id, 0)
+        current_willing = self.chat_reply_willing.get(chat_id, 0) 
         is_high_mode = self.chat_high_willing_mode.get(chat_id, False)
         msg_count = self.chat_msg_count.get(chat_id, 0)
         in_conversation_context = self.chat_conversation_context.get(chat_id, False)
@@ -151,11 +152,11 @@ class WillingManager:
             current_willing += 0.3
         
         # 特殊情况处理
-        if is_mentioned_bot:
-            current_willing += 0.5
-            in_conversation_context = True
-            self.chat_conversation_context[chat_id] = True
-            logger.debug(f"被提及, 当前意愿: {current_willing}")
+        # if is_mentioned_bot:
+        #     current_willing += 1
+        #     in_conversation_context = True
+        #     self.chat_conversation_context[chat_id] = True
+        #     logger.debug(f"被提及, 当前意愿: {current_willing}")
         
         if is_emoji:
             current_willing *= 0.1
@@ -180,7 +181,12 @@ class WillingManager:
             base_probability = 0.30 if msg_count >= 15 else 0.03 * min(msg_count, 10)
             
         # 考虑回复意愿的影响
-        reply_probability = base_probability * current_willing
+        # reply_probability = base_probability * current_willing *group_willing
+        reply_probability = (
+            1.0  # 被 @ 时强制响应
+            if is_mentioned_bot 
+            else base_probability * current_willing * group_willing
+        )
         
         # 检查群组权限（如果是群聊）
         if chat_stream.group_info and config:               
@@ -255,5 +261,6 @@ class WillingManager:
                 self._mode_switch_task = asyncio.create_task(self._mode_switch_check())
             self._started = True
 
+
 # 创建全局实例
-willing_manager = WillingManager() 
+willing_manager = WillingManager()

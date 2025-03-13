@@ -208,12 +208,13 @@ def split_into_sentences_w_remove_punctuation(text: str) -> List[str]:
             return list(text)  # 如果文本很短且触发随机条件,直接按字符分割
         else:
             return [text]
-    if len_text < 12:
-        split_strength = 0.3
-    elif len_text < 32:
-        split_strength = 0.7
-    else:
-        split_strength = 0.9
+    split_strength = 0.3
+    # if len_text < 12:
+    #     split_strength = 0.3
+    # elif len_text < 32:
+    #     split_strength = 0.7
+    # else:
+    #     split_strength = 0.9
     # 先移除换行符
     # print(f"split_strength: {split_strength}")
 
@@ -305,9 +306,9 @@ def random_remove_punctuation(text: str) -> str:
 
 def process_llm_response(text: str) -> List[str]:
     # processed_response = process_text_with_typos(content)
-    if len(text) > 200:
-        logger.warning(f"回复过长 ({len(text)} 字符)，返回默认回复")
-        return ['懒得说']
+    # if len(text) > 200:
+    #     logger.warning(f"回复过长 ({len(text)} 字符)，返回默认回复")
+    #     return ['懒得说']
     # 处理长消息
     typo_generator = ChineseTypoGenerator(
         error_rate=global_config.chinese_typo_error_rate,

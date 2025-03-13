@@ -330,7 +330,7 @@ class BotConfig:
 
         def groups(parent: dict):
             groups_config = parent["groups"]
-            config.talk_allowed_groups = set(groups_config.get("talk_allowed", []))
+            config.talk_allowed_groups = groups_config.get("talk_allowed", {})
             config.talk_frequency_down_groups = set(groups_config.get("talk_frequency_down", []))
             config.ban_user_id = set(groups_config.get("ban_user_id", []))
 
